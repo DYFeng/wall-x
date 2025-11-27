@@ -16,12 +16,9 @@ import torch
 import matplotlib.pyplot as plt
 import os
 
-from wall_x.model.action_head import Normalizer
-from wall_x.model.qwen2_5_based.modeling_qwen2_5_vl_act import (
-    Qwen2_5_VLMoEForAction,
-)
-from lerobot.datasets.lerobot_dataset import LeRobotDataset, LeRobotDatasetMetadata
+from wall_x.data.utils import update_action_statistics
 from wall_x.utils.constant import action_statistic_dof
+from wall_x.model.action_head import Normalizer
 
 try:
     import msgpack
@@ -45,17 +42,25 @@ logger = logging.getLogger(__name__)
 class WallXClient:
     """Client for connecting to Wall-X model server."""
 
-    def __init__(self, config_path: str, uri: str = "ws://localhost:8000"):
+    def __init__(
+        self,
+        config_path: str,
+        uri: str = "ws://localhost:8000",
+        norm_stats_path: str = "x2_norm_stats.json",
+    ):
         """Initialize client.
 
         Args:
+            config_path: Path to train config file
             uri: WebSocket URI of the server (e.g., ws://localhost:8000)
+            norm_stats_path: Path to normalization stats file
         """
         self.uri = uri
         self.websocket = None
         self.metadata = None
         self._loop = None
         self._thread = None
+        self.norm_stats_path = norm_stats_path
 
         with open(config_path, "r") as f:
             self.train_config = yaml.load(f, Loader=yaml.FullLoader)
@@ -166,20 +171,21 @@ class WallXClient:
         return result
 
     def init_normalizer(self, train_config):
-        customized_dof_config = train_config["customized_robot_config"][
-            "customized_dof_config"
-        ]
-        customized_agent_pos_config = train_config["customized_robot_config"][
-            "customized_agent_pos_config"
-        ]
-        Qwen2_5_VLMoEForAction._set_customized_config(train_config)
+        # Define default configurations
+        dof_config = {"biarm_eed_with_base": 20}
 
-        self.normalizer_action = Normalizer(
-            action_statistic_dof, customized_dof_config
-        ).to("cuda")
-        self.normalizer_propri = Normalizer(
-            action_statistic_dof, customized_agent_pos_config
-        ).to("cuda")
+        agent_pos_config = {"biarm_eed_with_base": 20}
+
+        update_action_statistics(
+            action_statistic_dof=action_statistic_dof,
+            norm_stats_path=self.norm_stats_path,
+            repo_id="x2",
+            dof_config=dof_config,
+            agent_pos_config=agent_pos_config,
+        )
+
+        self.normalizer_action = Normalizer(action_statistic_dof, dof_config)
+        self.normalizer_propri = Normalizer(action_statistic_dof, agent_pos_config)
 
         print("Normalizer initialized")
 
@@ -213,6 +219,8 @@ def prepare_batch_sync(data, normalizer_action, normalizer_propri, dataset_names
 
 
 def init_serving_sample_dataset(train_config):
+    from lerobot.datasets.lerobot_dataset import LeRobotDataset, LeRobotDatasetMetadata
+
     repo_id = train_config["data"]["lerobot_config"]["repo_id"]
 
     meta_info = LeRobotDatasetMetadata(repo_id)
@@ -237,7 +245,9 @@ def main_sync(args):
     """Synchronous version of main function."""
 
     # Create client and connect
-    client = WallXClient(args.config_path, uri=args.uri)
+    client = WallXClient(
+        args.config_path, uri=args.uri, norm_stats_path=args.norm_stats_path
+    )
     client.connect_sync()
 
     dataset, repo_id = init_serving_sample_dataset(client.train_config)
@@ -295,7 +305,9 @@ def main_sync(args):
 
 
 async def main(args):
-    client = WallXClient(args.config_path, uri=args.uri)
+    client = WallXClient(
+        args.config_path, uri=args.uri, norm_stats_path=args.norm_stats_path
+    )
     await client.connect()
     dataset, repo_id = init_serving_sample_dataset(client.train_config)
 
@@ -363,13 +375,18 @@ if __name__ == "__main__":
     parser.add_argument("--action_dim", type=int, default=7, help="Action dimension")
     parser.add_argument(
         "--config_path",
-        default="/x2robot_v2/vincent/workspace/opensource/cfg/config_from_qwen_libero.yml",
+        default="config_from_qwen_libero.yml",
         help="Train config path",
     )
     parser.add_argument(
         "--save_dir",
-        default="/x2robot_v2/vincent/workspace/opensource/plots/libero",
+        default="libero",
         help="Save directory",
+    )
+    parser.add_argument(
+        "--norm_stats_path",
+        default="x2_norm_stats.json",
+        help="Normalization stats path",
     )
     args = parser.parse_args()
 
