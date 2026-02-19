@@ -4,8 +4,8 @@
 log_name: "robotic_training"
 log_project: "vla_training"
 model_type: qwen2_5
-pretrained_wallx_path: "/path/to/wallx_model/"  # Must set
-save_path: "/path/to/workspace/"                # Must set
+pretrained_wallx_path: "/root/gpufree-data/huggingface/hub/models--x-square-robot--wall-oss-flow/snapshots/a4003288001825b10771cbc4b10b9c2315e9b862/"  # Must set
+save_path: "/root/gpufree-data/output/train/so101-table-cleanup/wallx-native/"                # Must set
 use_fast_tokenizer: True                       # True: train FAST, False: train Flow
 action_tokenizer_path: "/path/to/fast/"         # Must set if use_fast_tokenizer is true
 qwen_vl_act_config_path: "wall-x/workspace/lerobot_example/qwen25_config.json"

@@ -17,6 +17,15 @@ import torch
 from transformers import BatchFeature
 
 KEY_MAPPINGS = {
+    # Add your customized key mapping here
+    "EverNorif/so101-table-cleanup": {
+        "camera": {
+            "observation.images.front": "face_view", # find a similar view
+            "observation.images.wrist": "right_wrist_view", # find a similar view
+        },
+        "state": "observation.state",
+        "action": "action",
+    },
     "lerobot/aloha_mobile_cabinet": {
         "camera": {
             "observation.images.cam_high": "face_view",

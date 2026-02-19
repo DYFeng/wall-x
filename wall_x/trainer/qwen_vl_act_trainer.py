@@ -1004,6 +1004,9 @@ class QwenVlAct_Trainer:
                 self.model.load_state_dict(new_state_dict, strict=False)
         else:
             # Load full checkpoint including optimizer and scheduler states
+            checkpoint_path = self.config["resume"]["ckpt"]
+            self.accelerator.load_state(checkpoint_path)
+            self.print_rank0(f"Resumed from checkpoint: {checkpoint_path}")
 
             # self.accelerator.load_state(checkpoint_path)
             state_dict = load_file(

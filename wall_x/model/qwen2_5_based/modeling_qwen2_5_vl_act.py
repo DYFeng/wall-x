@@ -907,15 +907,16 @@ class Qwen2_5_VLMoEForAction(
         embed_tokens_size = len(processor.tokenizer)
         for file in safetensor_files:
             sd = load_file(file, device="cpu")
-            # filter normalizer statistic params
+            # Filter action_preprocessor layers that depend on dof_config
+            # These layers have shape mismatch when fine-tuning to a different robot
             del_keys = []
             for key in sd.keys():
-                if "action_preprocessor.normalizer" in key:
-                    print(f"filter load model weight {key}")
+                if "action_preprocessor." in key:
+                    # Filter all action_preprocessor layers (normalizer + dof-dependent layers)
+                    print(f"filter action_preprocessor layer: {key}")
                     del_keys.append(key)
                 if "embed_tokens.weight" in key:
                     embed_tokens_size = sd[key].shape[0]
-            # if train_config is not None:
             for key in del_keys:
                 del sd[key]
             state_dict.update(sd)

@@ -38,6 +38,7 @@ ACTION_DATASET_NAMES = [
     "viola",
     "physical-intelligence/libero",
     "lerobot/aloha_mobile_cabinet",
+    "EverNorif/so101-table-cleanup",
 ]
 
 # Supported multimodal datasets

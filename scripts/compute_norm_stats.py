@@ -157,9 +157,9 @@ def compute_action_normalizer(
 
 def main() -> None:
 
-    repo_id = "xxx"  # your dataset name
-    data_root_path = "/path/to/lerobot/dataset"
-    output_stats_dir = "/path/to/save/action_stats"
+    repo_id = "EverNorif/so101-table-cleanup"  # your dataset name
+    data_root_path = "/root/gpufree-data/dataset/EverNorif/so101-table-cleanup"
+    output_stats_dir = "/root/gpufree-data/output/train/so101-table-cleanup/wallx-native/action_stats"
     trajectory_keys = {  # your dataset keys
         "propri": {
             "follow_right_ee_cartesian_pos": [0, 3],

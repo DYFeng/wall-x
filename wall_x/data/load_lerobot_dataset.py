@@ -200,7 +200,7 @@ class PreprocessedDataset(Dataset[T_co]):
             ),
             pin_memory=True,  # Enable for GPU training
             persistent_workers=num_workers > 0,  # Only if num_workers > 0
-            prefetch_factor=2,  # Reduce memory usage
+            prefetch_factor=4,  # Reduce memory usage
             drop_last=True,  # Avoid incomplete batches
         )
 
@@ -236,7 +236,7 @@ class PreprocessedDataset(Dataset[T_co]):
             ),
             pin_memory=True,
             persistent_workers=num_workers > 0,
-            prefetch_factor=2,
+            prefetch_factor=4,
             drop_last=False,
         )
 

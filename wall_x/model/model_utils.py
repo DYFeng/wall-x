@@ -25,6 +25,7 @@ def update_model_config(train_config, model_config):
 
 
 def load_wallx_processors(config):
+    print(config)
     processor = AutoProcessor.from_pretrained(config["processor_path"], use_fast=True)
     # pad side = left
     processor.tokenizer.padding_side = "left"
