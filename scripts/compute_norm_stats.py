@@ -159,7 +159,7 @@ def main() -> None:
 
     repo_id = "EverNorif/so101-table-cleanup"  # your dataset name
     data_root_path = "/root/gpufree-data/datasets/EverNorif/so101-table-cleanup"
-    output_stats_dir = "/root/gpufree-data/output/train/so101-table-cleanup/wallx-native/action_stats"
+    output_stats_dir = "/root/gpufree-data/output/train/so101-table-cleanup/action_stats"
     trajectory_keys = {  # your dataset keys
         "propri": {
             "shoulder_pan.pos": [0, 1],

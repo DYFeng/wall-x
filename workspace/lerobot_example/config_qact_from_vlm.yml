@@ -3,7 +3,7 @@
 # Model and paths configuration
 log_name: "robotic_training"
 log_project: "vla_training"
-model_type: qwen2_5
+model_type: qwen2_5 # 从头训练 VLA
 pretrained_wallx_path: "/root/gpufree-data/huggingface/hub/models--x-square-robot--wall-oss-flow/snapshots/a4003288001825b10771cbc4b10b9c2315e9b862/"  # Must set
 save_path: "/root/gpufree-data/output/train/so101-table-cleanup/wallx-native/"                # Must set
 use_fast_tokenizer: True                       # True: train FAST, False: train Flow

@@ -9,6 +9,7 @@ save_path: "/root/gpufree-data/output/train/so101-table-cleanup/wallx-native/"  
 use_fast_tokenizer: False                       # True: train FAST, False: train Flow
 #action_tokenizer_path: "/root/gpufree-data/huggingface/hub/models--physical-intelligence--fast/snapshots/ec4d7aa71691cac0b8bed6942be45684db2110f4"         # Must set if use_fast_tokenizer is true
 processor_path: "/root/gpufree-data/models/x-square-robot/wall-oss-flow/"
+qwen_vl_act_config_path: "/root/gpufree-data/wall-x/workspace/lerobot_example/qwen25_config.json"
 
 # # Model and paths configuration
 # log_name: "lerobot_training_fast"
