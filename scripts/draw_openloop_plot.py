@@ -33,7 +33,7 @@ if __name__ == "__main__":
     model_path = "/root/gpufree-data/output/train/so101-table-cleanup/wallx-native/3"
     action_tokenizer_path = "/root/gpufree-data/models/physical-intelligence/fast"
     save_dir = "/root/gpufree-data/output/train/so101-table-cleanup/wallx-native/openloop_plot"
-    path = f"{model_path}/config.yaml"
+    path = f"{model_path}/config.yml"
     config = load_config(path)
 
     normalizer_action, normalizer_propri = register_normalizers(config, model_path)
