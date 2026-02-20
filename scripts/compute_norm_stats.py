@@ -158,18 +158,24 @@ def compute_action_normalizer(
 def main() -> None:
 
     repo_id = "EverNorif/so101-table-cleanup"  # your dataset name
-    data_root_path = "/root/gpufree-data/dataset/EverNorif/so101-table-cleanup"
+    data_root_path = "/root/gpufree-data/datasets/EverNorif/so101-table-cleanup"
     output_stats_dir = "/root/gpufree-data/output/train/so101-table-cleanup/wallx-native/action_stats"
     trajectory_keys = {  # your dataset keys
         "propri": {
-            "follow_right_ee_cartesian_pos": [0, 3],
-            "follow_right_ee_rotation": [3, 6],
-            "follow_right_gripper": [6, 7],
+            "shoulder_pan.pos": [0, 1],
+            "shoulder_lift.pos": [1, 2],
+            "elbow_flex.pos": [2, 3],
+            "wrist_flex.pos": [3, 4],
+            "wrist_roll.pos": [4, 5],
+            "gripper.pos": [5, 6]
         },
         "action": {
-            "master_right_ee_cartesian_pos": [0, 3],
-            "master_right_ee_rotation": [3, 6],
-            "master_right_gripper": [6, 7],
+            "shoulder_pan.pos": [0, 1],
+            "shoulder_lift.pos": [1, 2],
+            "elbow_flex.pos": [2, 3],
+            "wrist_flex.pos": [3, 4],
+            "wrist_roll.pos": [4, 5],
+            "gripper.pos": [5, 6]
         },
     }
 
