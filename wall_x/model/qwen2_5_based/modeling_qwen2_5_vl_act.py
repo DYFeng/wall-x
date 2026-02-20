@@ -860,39 +860,7 @@ class Qwen2_5_VLMoEForAction(
                 print(f"load train_config.yml fail: {e}")
                 train_config = None
 
-        # Resolve model configuration path with fallback strategy:
-        # 1) checkpoint's config.json
-        # 2) train_config["qwen_vl_act_config_path"] if provided
-        # 3) train_config["pretrained_qwen_vl_path"]/config.json
-        ckpt_config_path = os.path.join(pretrained_model_path, "config.json")
-        resolved_config_path = None
-        if os.path.exists(ckpt_config_path):
-            resolved_config_path = ckpt_config_path
-        else:
-            if train_config is not None:
-                fallback_cfg = train_config.get("qwen_vl_act_config_path", None)
-                if fallback_cfg is not None and isinstance(fallback_cfg, str) and fallback_cfg:
-                    if os.path.exists(fallback_cfg):
-                        resolved_config_path = fallback_cfg
-                # If still not resolved, try pretrained_qwen_vl_path
-                if resolved_config_path is None:
-                    pretrained_qwen_vl_path = train_config.get("pretrained_qwen_vl_path", None)
-                    if pretrained_qwen_vl_path:
-                        candidate = os.path.join(pretrained_qwen_vl_path, "config.json")
-                        if os.path.exists(candidate):
-                            resolved_config_path = candidate
-
-        if resolved_config_path is None:
-            # Provide a clear error with checked paths for easier debugging
-            raise ValueError(
-                f"[LoadModelConfig] Cannot load model config! "
-                f"Checked:\n"
-                f" - Checkpoint config.json: {ckpt_config_path}\n"
-                f" - Fallback path: {train_config.get('qwen_vl_act_config_path', None) if train_config else None}\n"
-                f" - Pretrained model path: {train_config.get('pretrained_qwen_vl_path', None) if train_config else None}"
-            )
-
-        model_config_path = resolved_config_path
+        model_config_path = os.path.join(pretrained_model_path, "config.json")
         model_config = cls.config_class.from_pretrained(model_config_path)
 
         if train_config is not None:
