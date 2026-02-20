@@ -1,14 +1,14 @@
 # wall-x/workspace/lerobot_example/config_qact.yml
 
 # Model and paths configuration, for flow
-log_name: "lerobot_training_flow"
+log_name: "robotic_training"
 log_project: "wall-oss_so101_finetuning"
 model_type: wall-oss
-pretrained_wallx_path: "/root/gpufree-data/huggingface/hub/models--x-square-robot--wall-oss-flow/snapshots/a4003288001825b10771cbc4b10b9c2315e9b862/"  # Must set
+pretrained_wallx_path: "/root/gpufree-data/models/x-square-robot/wall-oss-flow/"  # Must set
 save_path: "/root/gpufree-data/output/train/so101-table-cleanup/wallx-native/"                # Must set
 use_fast_tokenizer: False                       # True: train FAST, False: train Flow
 #action_tokenizer_path: "/root/gpufree-data/huggingface/hub/models--physical-intelligence--fast/snapshots/ec4d7aa71691cac0b8bed6942be45684db2110f4"         # Must set if use_fast_tokenizer is true
-processor_path: "/root/gpufree-data/huggingface/hub/models--x-square-robot--wall-oss-flow/snapshots/a4003288001825b10771cbc4b10b9c2315e9b862/"
+processor_path: "/root/gpufree-data/models/x-square-robot/wall-oss-flow/"
 
 # # Model and paths configuration
 # log_name: "lerobot_training_fast"
@@ -33,9 +33,9 @@ learning_rate: 0.00005
 min_lr: 0.00005
 num_epoch: 100
 gradient_accumulation_steps: 32
-batch_size_per_gpu: 18
+batch_size_per_gpu: 4
 padding_side: left
-epoch_save_interval: 1
+epoch_save_interval: 2
 freeze_vlm: True
 
 # Training optimization settings
@@ -84,7 +84,7 @@ data:
   # LeRobot dataset configuration
   lerobot_config:
     repo_id: "EverNorif/so101-table-cleanup"
-    root: "/root/gpufree-data/huggingface/hub"
+    root: "/root/gpufree-data/datasets/EverNorif/so101-table-cleanup"
     episodes: null
     image_transforms: null
     delta_timestamps: null
