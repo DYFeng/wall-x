@@ -157,20 +157,42 @@ def compute_action_normalizer(
 
 def main() -> None:
 
-    repo_id = "xxx"  # your dataset name
-    data_root_path = "/path/to/lerobot/dataset"
-    output_stats_dir = "/path/to/save/action_stats"
-    trajectory_keys = {  # your dataset keys
-        "propri": {
-            "follow_right_ee_cartesian_pos": [0, 3],
-            "follow_right_ee_rotation": [3, 6],
-            "follow_right_gripper": [6, 7],
+    # repo_id = "EverNorif/so101-table-cleanup"  # your dataset name
+    # data_root_path = "/root/gpufree-data/datasets/EverNorif/so101-table-cleanup"
+    # output_stats_dir = "/root/gpufree-data/output/train/so101-table-cleanup/action_stats"
+    # trajectory_keys = {  # your dataset keys
+    #     "propri": {
+    #         "shoulder_pan.pos": [0, 1],
+    #         "shoulder_lift.pos": [1, 2],
+    #         "elbow_flex.pos": [2, 3],
+    #         "wrist_flex.pos": [3, 4],
+    #         "wrist_roll.pos": [4, 5],
+    #         "gripper.pos": [5, 6]
+    #     },
+    #     "action": {
+    #         "shoulder_pan.pos": [0, 1],
+    #         "shoulder_lift.pos": [1, 2],
+    #         "elbow_flex.pos": [2, 3],
+    #         "wrist_flex.pos": [3, 4],
+    #         "wrist_roll.pos": [4, 5],
+    #         "gripper.pos": [5, 6]
+    #     },
+    # }
+
+    repo_id = "x-square-robot/libero_all"  # your dataset name
+    data_root_path = "/root/gpufree-data/datasets/x-square-robot/libero_all/"
+    output_stats_dir = "/root/gpufree-data/output/train/libero_all/action_stats"
+    trajectory_keys = {                             # your dataset keys
+        "action":{
+            "follow_right_ee_cartesian_pos": [0,3],
+            "follow_right_ee_rotation": [3,6],
+            "follow_right_gripper": [6,7]
         },
-        "action": {
-            "master_right_ee_cartesian_pos": [0, 3],
-            "master_right_ee_rotation": [3, 6],
-            "master_right_gripper": [6, 7],
-        },
+        "propri":{
+            "master_right_ee_cartesian_pos": [0,3],
+            "master_right_ee_rotation": [3,6],
+            "master_right_gripper": [6,7]
+        }
     }
 
     compute_action_normalizer(
