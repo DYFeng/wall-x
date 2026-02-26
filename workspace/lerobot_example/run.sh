@@ -5,8 +5,8 @@ NUM_GPUS=$(echo $CUDA_VISIBLE_DEVICES | tr ',' '\n' | wc -l)
 # print current time
 echo "[current time: $(date +'%Y-%m-%d %H:%M:%S')]"
 
-code_dir="/path/to/wall-x"
-config_path="/path/to/wall-x/workspace/lerobot_example"
+code_dir="/root/gpufree-data/wall-x"
+config_path="${code_dir}/workspace/lerobot_example"
 
 # Use a fixed port instead of a random one
 export PORT=$((21000 + $RANDOM % 30000))
