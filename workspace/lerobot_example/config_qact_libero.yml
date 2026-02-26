@@ -6,6 +6,7 @@ log_name: "wall_oss_libero"
 log_project: "wall-oss freeze_vlm lr3e-5"
 model_type: wall-oss
 pretrained_wallx_path: "/root/gpufree-data/models/x-square-robot/wall-oss-flow-v0.1/"  # Must set
+processor_path: "/root/gpufree-data/models/x-square-robot/wall-oss-flow-v0.1/"
 save_path: "/root/gpufree-data/output/train/so101-table-cleanup/wallx-native/"                # Must set
 use_fast_tokenizer: False                       # True: train FAST, False: train Flow
 action_tokenizer_path: "/path/to/fast/"         # Must set if use_fast_tokenizer is true
