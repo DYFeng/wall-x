@@ -7,7 +7,7 @@ log_project: "wall_oss_libero"
 model_type: wall-oss
 pretrained_wallx_path: "/root/gpufree-data/models/x-square-robot/wall-oss-flow-v0.1/"  # Must set
 processor_path: "/root/gpufree-data/models/x-square-robot/wall-oss-flow-v0.1/"
-save_path: "/root/gpufree-data/output/train/so101-table-cleanup/wallx-native/"                # Must set
+save_path: "/root/gpufree-data/output/train/libero_all/ckpt/"                # Must set
 use_fast_tokenizer: False                       # True: train FAST, False: train Flow
 action_tokenizer_path: "/path/to/fast/"         # Must set if use_fast_tokenizer is true
 
