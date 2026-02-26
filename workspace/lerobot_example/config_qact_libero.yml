@@ -2,8 +2,8 @@
 # This configuration supports multi-modal learning with vision, language, and action data
 
 # Model and paths configuration
-log_name: "wall_oss_libero"
-log_project: "wall-oss freeze_vlm lr3e-5"
+log_name: "wall-oss freeze_vlm lr3e-5"
+log_project: "wall_oss_libero"
 model_type: wall-oss
 pretrained_wallx_path: "/root/gpufree-data/models/x-square-robot/wall-oss-flow-v0.1/"  # Must set
 processor_path: "/root/gpufree-data/models/x-square-robot/wall-oss-flow-v0.1/"
