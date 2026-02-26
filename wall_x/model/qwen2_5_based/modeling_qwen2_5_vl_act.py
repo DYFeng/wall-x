@@ -907,10 +907,14 @@ class Qwen2_5_VLMoEForAction(
         embed_tokens_size = len(processor.tokenizer)
         for file in safetensor_files:
             sd = load_file(file, device="cpu")
-            # filter normalizer statistic params
+            # filter normalizer statistic params and action preprocessor weights
+            # (since action dim may change between different dof configurations)
             del_keys = []
             for key in sd.keys():
                 if "action_preprocessor.normalizer" in key:
+                    print(f"filter load model weight {key}")
+                    del_keys.append(key)
+                elif "action_preprocessor." in key:
                     print(f"filter load model weight {key}")
                     del_keys.append(key)
                 if "embed_tokens.weight" in key:
