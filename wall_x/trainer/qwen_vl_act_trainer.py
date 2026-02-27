@@ -500,18 +500,18 @@ class QwenVlAct_Trainer:
                     self.timers("data-load", log_level=0).start(barrier=False)
 
                 # Periodic logging
-            t1 = time.time()
-            if i % 1 == 0:
-                lr = self.lr_scheduler.get_last_lr()[0]
-                self.training_log(
-                    epoch, self.num_epoch, i, total, loss, lr, t1 - t0
-                )
-                t0 = time.time()
+                t1 = time.time()
+                if i % 1 == 0:
+                    lr = self.lr_scheduler.get_last_lr()[0]
+                    self.training_log(
+                        epoch, self.num_epoch, i, total, loss, lr, t1 - t0
+                    )
+                    t0 = time.time()
 
-            # Save checkpoint during training based on steps
-            save_steps = self.config.get("save_steps", 0)
-            if save_steps > 0 and self.global_step > 0 and self.global_step % save_steps == 0:
-                self.save_checkpoint(epoch, self.global_step)
+                # Save checkpoint during training based on steps
+                save_steps = self.config.get("save_steps", 0)
+                if save_steps > 0 and self.global_step > 0 and self.global_step % save_steps == 0:
+                    self.save_checkpoint(epoch, self.global_step)
 
             if enable_profiling:
                 profiler.step()
