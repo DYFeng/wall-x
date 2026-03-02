@@ -291,7 +291,7 @@ class QwenVlAct_Trainer:
                 self.save_checkpoint(epoch)
 
             # Validation after each epoch
-            # self.val_loop()
+            self.val_loop()
             self.accelerator.wait_for_everyone()
 
             # Memory cleanup
@@ -416,6 +416,16 @@ class QwenVlAct_Trainer:
                             "lr": lr,
                             "train_loss": train_loss,
                         }
+                        
+                        # Validate every n iterations if configured
+                        val_interval = self.config.get("val_interval", 0)
+                        if self.accelerator.is_main_process:
+                            print(f"Current global_step: {self.global_step}, val_interval: {val_interval}", flush=True)
+                        if val_interval > 0 and self.global_step > 0 and self.global_step % val_interval == 0:
+                            if self.accelerator.is_main_process:
+                                print(f"Starting validation at global step {self.global_step}...", flush=True)
+                            self.val_loop()
+                            self.model.train()
 
                         # Log component losses
                         if (
@@ -527,6 +537,9 @@ class QwenVlAct_Trainer:
 
         Evaluates model performance on validation set and logs validation loss.
         """
+        if self.accelerator.is_main_process:
+            print(f"Validation loop started at global step {self.global_step}", flush=True)
+        
         # Initialize validation dataloader
         if getattr(self, "val_dataloader", None) is not None:
             self.dataset._eval()
@@ -537,6 +550,8 @@ class QwenVlAct_Trainer:
 
         self.model.eval()
         self.val_loss = 0
+        self.val_cross_entropy_loss = 0
+        self.val_flow_loss = 0
 
         # Validation loop
         for i, batch in enumerate(
@@ -561,13 +576,31 @@ class QwenVlAct_Trainer:
                 outputs = self.model(**batch, mode="train")
                 loss = outputs.loss
                 self.val_loss += self.accelerator.gather(loss.detach()).mean().item()
+                
+                # Record loss components if available
+                if "cross_entropy_loss" in outputs and outputs.cross_entropy_loss is not None:
+                    self.val_cross_entropy_loss += self.accelerator.gather(outputs.cross_entropy_loss.detach()).mean().item()
+                if "flow_loss" in outputs and outputs.flow_loss is not None:
+                    self.val_flow_loss += self.accelerator.gather(outputs.flow_loss.detach()).mean().item()
 
-        # Calculate average validation loss
+        # Calculate average validation losses
         self.val_loss /= len(self.val_dataloader)
+        self.val_cross_entropy_loss /= len(self.val_dataloader)
+        self.val_flow_loss /= len(self.val_dataloader)
 
         # Log validation metrics
         if self.logger is not None:
             self.logger.log({"val_loss": self.val_loss}, step=self.global_step)
+            self.logger.log({"val_cross_entropy_loss": self.val_cross_entropy_loss}, step=self.global_step)
+            self.logger.log({"val_flow_loss": self.val_flow_loss}, step=self.global_step)
+            if self.accelerator.is_main_process:
+                print(f"Validation metrics logged to wandb: val_loss={self.val_loss}, val_cross_entropy_loss={self.val_cross_entropy_loss}, val_flow_loss={self.val_flow_loss}", flush=True)
+        else:
+            if self.accelerator.is_main_process:
+                print(f"No logger available, validation metrics not logged: val_loss={self.val_loss}, val_cross_entropy_loss={self.val_cross_entropy_loss}, val_flow_loss={self.val_flow_loss}", flush=True)
+
+        if self.accelerator.is_main_process:
+            print(f"Validation completed at global step {self.global_step}", flush=True)
 
         self.model.train()
 
