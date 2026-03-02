@@ -192,7 +192,7 @@ class PreprocessedDataset(Dataset[T_co]):
             sampler=sampler,  # Use distributed sampler instead of shuffle=True
             num_workers=num_workers,
             collate_fn=DataCollator(
-                self.config,
+                self.config,DataCollator
                 self.dataload_config,
                 self.normalizer_action,
                 self.normalizer_propri,
@@ -232,7 +232,7 @@ class PreprocessedDataset(Dataset[T_co]):
             sampler=sampler,
             num_workers=num_workers,
             collate_fn=DataCollator(
-                self.config, self.dataload_config, self.norm_stats, self.lerobot_config
+                self.config, self.dataload_config, self.normalizer_action, self.normalizer_propri, self.lerobot_config
             ),
             pin_memory=True,
             persistent_workers=num_workers > 0,
