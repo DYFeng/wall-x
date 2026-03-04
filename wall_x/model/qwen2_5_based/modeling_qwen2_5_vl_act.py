@@ -11,7 +11,7 @@ from safetensors.torch import load_file
 from peft import LoraConfig, get_peft_model
 from typing import Optional, List, Tuple, Any, Dict, Union
 import time
-from transformers import AutoConfig, AutoProcessor
+from transformers import AutoConfig, AutoProcessor, GenerationMixin
 from transformers.utils import logging, is_torchdynamo_compiling
 from transformers.cache_utils import (
     Cache,
@@ -281,7 +281,7 @@ class Qwen2_5_VLDecoderLayer_with_MoE(nn.Module, ActionModelMixMin):
         return outputs
 
 
-class Qwen2_5_VLMoEModel(Qwen2_5_VLPreTrainedModel, ActionModelMixMin):
+class Qwen2_5_VLMoEModel(Qwen2_5_VLPreTrainedModel, GenerationMixin, ActionModelMixMin):
     @classmethod
     def from_pretrained(
         cls, pretrained_model_name_or_path, num_experts=None, *args, **kwargs
@@ -352,6 +352,20 @@ class Qwen2_5_VLMoEModel(Qwen2_5_VLPreTrainedModel, ActionModelMixMin):
 
     def set_input_embeddings(self, value):
         self.embed_tokens = value
+
+    def prepare_inputs_for_generation(self, input_ids, past=None, **kwargs):
+        """
+        Prepare inputs for generation.
+        
+        Args:
+            input_ids: Input token IDs
+            past: Past key values
+            **kwargs: Additional keyword arguments
+            
+        Returns:
+            Dictionary of inputs for generation
+        """
+        return {"input_ids": input_ids, "past_key_values": past, **kwargs}
 
     def forward(
         self,
