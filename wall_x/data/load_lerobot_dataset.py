@@ -192,7 +192,7 @@ class PreprocessedDataset(Dataset[T_co]):
             sampler=sampler,  # Use distributed sampler instead of shuffle=True
             num_workers=num_workers,
             collate_fn=DataCollator(
-                self.config,DataCollator
+                self.config,
                 self.dataload_config,
                 self.normalizer_action,
                 self.normalizer_propri,
