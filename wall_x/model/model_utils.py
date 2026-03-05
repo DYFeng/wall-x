@@ -21,6 +21,12 @@ def update_model_config(train_config, model_config):
     if train_config.get("_attn_implementation", None) is not None:
         model_config._attn_implementation = train_config["_attn_implementation"]
 
+    if train_config.get("use_lora", False):
+        model_config.use_lora = True
+        model_config.lora_r = train_config["lora_r"]
+        model_config.lora_alpha = train_config["lora_alpha"]
+        model_config.lora_target_modules = train_config["lora_target_modules"]
+        model_config.lora_dropout = train_config["lora_dropout"]
     return model_config
 
 
