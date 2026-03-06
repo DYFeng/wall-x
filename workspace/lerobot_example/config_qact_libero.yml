@@ -2,7 +2,7 @@
 # This configuration supports multi-modal learning with vision, language, and action data
 
 # Model and paths configuration
-log_name: "wall-oss freeze_vlm lr3e-5"
+log_name: "wall-oss freeze_vlm lr1e-5 batch2 grad16"
 log_project: "wall_oss_libero"
 model_type: wall-oss
 pretrained_wallx_path: "/root/gpufree-data/models/x-square-robot/wall-oss-flow-v0.1/"  # Must set
@@ -20,20 +20,67 @@ profile_active_iters: 2
 
 # Training hyperparameters
 num_warmup_steps: 100
-num_training_steps: 64000000
-learning_rate: 0.00003
-min_lr: 0.00003
+num_training_steps: 20
+learning_rate: 0.00005
+min_lr: 0.00001
 num_epoch: 100
-gradient_accumulation_steps: 32
-batch_size_per_gpu: 8
+gradient_accumulation_steps: 1
+batch_size_per_gpu: 1
 padding_side: left
 epoch_save_interval: 1
+val_interval: 500  # Validate every 1000 iterations
 
-freeze_vlm: true
+# freeze_vlm: true
+
+# # LoRA configuration
+# use_lora: false
+# lora_r: 32
+# lora_alpha: 32
+# lora_dropout: 0.2
+# lora_target_modules:
+#   - "embed_tokens"
+#   - "self_attn.q_proj_experts.0"
+#   - "self_attn.v_proj_experts.0"
+#   - "self_attn.q_proj_experts.1"
+#   - "self_attn.v_proj_experts.1"
+#   - "self_attn.k_proj_experts.0"
+#   - "self_attn.k_proj_experts.1"
+#   - "self_attn.o_proj_experts.0"
+#   - "self_attn.o_proj_experts.1"
+#   - "moe.experts.0.gate_proj"
+#   - "moe.experts.0.up_proj"
+#   - "moe.experts.0.down_proj"
+#   - "moe.experts.1.gate_proj"
+#   - "moe.experts.1.up_proj"
+#   - "moe.experts.1.down_proj"
+#   - "lm_head"
+#   - "action_preprocessor.propri_proj"
+#   - "action_preprocessor.w1"
+#   - "action_preprocessor.w2"
+#   - "action_preprocessor.w3"
+#   - "action_preprocessor.action_proj_back"
+
+
+# LoRA configuration
+use_lora: true
+lora_r: 8
+lora_alpha: 24
+lora_dropout: 0.1
+lora_target_modules:
+  - "k_proj_experts.0"
+  - "v_proj_experts.0"
+  - "o_proj_experts.0"
+  - "q_proj_experts.1"
+  - "k_proj_experts.1"
+  - "v_proj_experts.1"
+  - "o_proj_experts.1"
+  - "gate_proj"
+  - "up_proj"
+  - "down_proj"
 
 # Training optimization settings
-FSDP2: False
-torch_compile: False
+FSDP2: false
+torch_compile: false # 这个不能为true，貌似跟lora会有冲突，加载模型时key找不到
 
 # Robot configuration - Define degrees of freedom for each component
 dof_config:
@@ -47,10 +94,10 @@ agent_pos_config:
   follow_right_ee_rotation: 3
   follow_right_gripper: 1
 
-# # Checkpoint resuming configuration
+# Checkpoint resuming configuration
 # resume:
-#   ckpt: "/path/to/resume_model/"
-#   load_ckpt_only: true
+#   ckpt: "/root/gpufree-data/output/train/libero_all/ckpt/0"
+#   # load_ckpt_only: true
 
 norm_stats_path: "/root/gpufree-data/output/train/libero_all/action_stats/all_robots_action_stats.json"
 
@@ -80,7 +127,7 @@ data:
     video_backend: null
 
   action_horizon: 10
-  train_test_split: 0.95
+  train_test_split: 0.001
 
   # Action keys for observation and prediction
   obs_action_keys:
@@ -95,11 +142,12 @@ data:
 
   # Image resolution configuration for different camera views
   resolution:
-    face_view: 256
-    left_wrist_view: 256
-    right_wrist_view: 256
-    move1_view: 256
-    move2_view: 256
-    top_view: 256
-    wall_view: 256
-    multi_modal: 256
+    face_view: 224
+    left_wrist_view: 224
+    right_wrist_view: 224
+    move1_view: 224
+    move2_view: 224
+    top_view: 224
+    wall_view: 224
+    multi_modal: 224
+
