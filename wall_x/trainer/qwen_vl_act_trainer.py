@@ -940,6 +940,13 @@ class QwenVlAct_Trainer:
                     sort_keys=False,
                 )
 
+            # Save model configuration
+            if config := getattr(self.model, "config", None):
+                model_config_path = os.path.join(ckpt_path, "config.json")
+                with open(model_config_path, "w", encoding="utf-8") as f:
+                    json.dump(config.to_dict(), f, indent=2)
+                print(f"[Checkpoint] Saved model config to {model_config_path}")
+
             pretrained_dir = self.config.get("pretrained_qwen_vl_path", None)
             if pretrained_dir is not None:
                 files_to_copy = [
