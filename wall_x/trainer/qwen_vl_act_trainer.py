@@ -107,6 +107,13 @@ def update_model_config(train_config, model_config):
         model_config.attn_deterministic = False
         model_config.vision_config.attn_deterministic = False
 
+    if train_config.get("use_lora", False):
+        model_config.use_lora = True
+        model_config.lora_r = train_config["lora_r"]
+        model_config.lora_alpha = train_config["lora_alpha"]
+        model_config.lora_target_modules = train_config["lora_target_modules"]
+        model_config.lora_dropout = train_config["lora_dropout"]
+        
     return model_config
 
 
