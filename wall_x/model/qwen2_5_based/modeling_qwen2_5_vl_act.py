@@ -1057,6 +1057,10 @@ class Qwen2_5_VLMoEForAction(
         # Print information about trainable parameters
         self.model.print_trainable_parameters()
 
+        # 重新 tie，这个貌似不需要，我也不知道他在什么地方悄悄tie的，反正在这个位置是还没tie，但我还是写上吧
+        base = self.model.get_base_model()
+        self.lm_head.weight = base.get_input_embeddings().weight
+
     def get_input_embeddings(self):
         """Get input embeddings layer."""
         return self.model.embed_tokens
