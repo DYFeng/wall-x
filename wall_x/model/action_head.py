@@ -637,22 +637,37 @@ class ActionProcessor(nn.Module):
         proprioception: [batch_size, 1, action_dim]
         dataset_names: [batch_size]
         dof_mask: [batch_size, action_dim]
+        use_history: bool (unused in this snippet)
+
+        作用：将本体感知向量（proprioception）投影到与 transformer 隐藏维度对齐的嵌入空间。
+        原理示例：
+            假设 action_dim=14，state_hidden_size=256，hidden_size=896。
+            1) 若提供了 dof_mask（例如 [0,1,0,1,...,0]），且 config.proj_with_mask=True，
+               则将 mask 拼接到 proprio 后，形状从 [B,1,14] -> [B,1,28]。
+            2) 经过 Linear(28, 256) 得到 proprio_embed [B,1,256]。
+            3) 因 256 < 896，再补 640 维零向量，最终输出 [B,1,896]，与后续 transformer 输入维度一致。
         """
+        # 统一数据类型与设备，避免 AMP 或多卡时的 dtype/device 不匹配
         proprioception = proprioception.to(device=self.propri_proj.weight.device).to(
             dtype=self.propri_proj.weight.dtype
         )
+
+        # 若启用 mask 拼接，则将 dof_mask 拼在最后一维，增强网络对“无效自由度”的感知
         if dof_mask is not None:
             if self.config.proj_with_mask:
                 proprioception = torch.cat(
                     [proprioception, dof_mask], dim=-1
                 )  # .unsqueeze(1)
+
+        # 再次确保 dtype/device 一致（冗余但安全）
         proprioception = proprioception.to(device=self.propri_proj.weight.device).to(
             dtype=self.propri_proj.weight.dtype
         )
-        proprio_embed = self.propri_proj(
-            proprioception
-        )  # [batch_size, 1, state_hidden_size]
 
+        # 线性投影： [B, 1, propri_dim(+mask)] -> [B, 1, state_hidden_size]
+        proprio_embed = self.propri_proj(proprioception)
+
+        # 若投影后维度仍小于 transformer 隐藏维度，则补零对齐，避免后续 attention 输入维度不一致
         if self.state_hidden_size < self.hidden_size:
             # padding to hidden size
             padding_size = self.hidden_size - self.state_hidden_size

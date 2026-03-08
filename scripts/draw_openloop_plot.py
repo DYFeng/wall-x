@@ -55,6 +55,7 @@ if __name__ == "__main__":
     # get test dataloader
     dataload_config = get_data_configs(config["data"])
     lerobot_config = dataload_config.get("lerobot_config", {})
+    # 返回 1 个测试集（get_dataloader 默认返回测试集）
     dataset = load_test_dataset(
         config, lerobot_config, normalizer_action, normalizer_propri, seed=42
     )

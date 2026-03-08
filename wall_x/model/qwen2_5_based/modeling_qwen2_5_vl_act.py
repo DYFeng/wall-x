@@ -2093,9 +2093,9 @@ class Qwen2_5_VLMoEForAction(
             # 图像嵌入处理
             if pixel_values is not None:
                 pixel_values = pixel_values.type(self.visual.dtype)
-                # 生成图像特征
+                # 生成图像特征，把三个图片变成了128个token，每个token对于的词向量是2048维，所以image_embeds.shape=（128, 2048）
                 image_embeds = self.visual(pixel_values, grid_thw=image_grid_thw)
-                # 验证图像特征与图像token数量匹配
+                # 验证图像特征与图像token数量匹配。输入的input_ids其实有图片token的占位符(image_token_id)，所以统计一下是不是有128个image_token_id
                 n_image_tokens = (input_ids == self.config.image_token_id).sum().item()
                 n_image_features = image_embeds.shape[0]
                 if n_image_tokens != n_image_features:
@@ -2103,7 +2103,7 @@ class Qwen2_5_VLMoEForAction(
                         f"Image features and image tokens do not match: tokens: {n_image_tokens}, features {n_image_features}"
                     )
 
-                # 创建图像token掩码并替换嵌入
+                # 创建图像token掩码并替换嵌入inputs_embeds，把原来input的图片占位符token替换成真实图片token
                 mask = input_ids == self.config.image_token_id
                 mask_unsqueezed = mask.unsqueeze(-1)
                 mask_expanded = mask_unsqueezed.expand_as(inputs_embeds)
@@ -2138,14 +2138,14 @@ class Qwen2_5_VLMoEForAction(
                 )
                 inputs_embeds = inputs_embeds.masked_scatter(video_mask, video_embeds)
 
-            # 本体感觉信息处理
+            # 本体感觉信息处理。proprioception:7维的机器人状态（LIBERO）
             if (
                 proprioception is not None
                 and not self.config.use_state_string_representation
             ):
                 proprioception = proprioception.to(inputs_embeds.device)
                 agent_pos_mask = agent_pos_mask.to(inputs_embeds.device)
-                # 生成本体感觉嵌入
+                # 生成本体感觉嵌入。把机器人状态proprioception变成1个token(一个2048维词向量)
                 proprio_embed = self.action_preprocessor.proprioception_proj(
                     proprioception,
                     dataset_names,
@@ -2156,6 +2156,7 @@ class Qwen2_5_VLMoEForAction(
                 proprioception_mask = (
                     input_ids == self.action_token_id_set["propri_token_id"]
                 )
+                # 简单点说就是把机器人的状态以token的形式替换输入的那一个状态占位token
                 inputs_embeds[proprioception_mask] = proprio_embed.reshape(
                     -1, inputs_embeds.shape[-1]
                 ).to(inputs_embeds.dtype)

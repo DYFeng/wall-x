@@ -1,0 +1,34 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+
+        {
+            "name": "Python Debugger: Current File with Arguments",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": "${command:pickArgs}"
+        },
+        {
+            "name": "debug train_qact.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/train_qact.py",
+            "console": "integratedTerminal",
+            "args": ["--config", "${workspaceFolder}/workspace/lerobot_example/config_qact_libero.yml"]
+        },
+         {
+            "name": "debug draw_openloop_plot.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/draw_openloop_plot.py",
+            "console": "integratedTerminal",
+            "args": ["--origin_action_dim", "7", "--pred_horizon", "10"]
+        }
+    ]
+}
