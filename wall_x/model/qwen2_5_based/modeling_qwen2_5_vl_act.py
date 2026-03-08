@@ -2015,13 +2015,61 @@ class Qwen2_5_VLMoEForAction(
         unnorm: Optional[bool] = True,
         **kwargs,
     ):
+        """
+        基于ODE积分的动作生成流程
 
+        该函数实现了一个基于ODE (Ordinary Differential Equation) 积分的动作生成流程，用于生成连续动作序列。
+        主要流程包括：输入嵌入处理、位置编码计算、动作初始化、预取前向传播、缓存预处理、ODE积分和后处理。
+
+        参数:
+            input_ids: 输入token IDs
+            action_horizon: 动作序列长度
+            action_dim: 动作维度
+            num_inference_timesteps: 推理时间步数，默认为10
+            padding_action: 填充动作，可选
+            prefix_length: 前缀长度，可选
+            attention_mask: 注意力掩码，可选
+            position_ids: 位置IDs，可选
+            past_key_values: 过去的键值缓存，可选
+            inputs_embeds: 输入嵌入，可选
+            moe_token_types: MoE token类型，可选
+            start_indices: 专家分组起始索引，可选
+            end_indices: 专家分组结束索引，可选
+            positional_masks: 位置掩码，可选
+            labels: 标签，可选
+            use_cache: 是否使用缓存，可选
+            output_attentions: 是否输出注意力，可选
+            output_hidden_states: 是否输出隐藏状态，可选
+            return_dict: 是否返回字典，可选
+            pixel_values: 图像像素值，可选
+            pixel_values_videos: 视频像素值，可选
+            image_grid_thw: 图像网格尺寸，可选
+            video_grid_thw: 视频网格尺寸，可选
+            action_chunk: 动作块，可选
+            proprioception: 本体感觉信息，可选
+            unnorm_proprioception: 未归一化的本体感觉信息，可选
+            rope_deltas: RoPE增量，可选
+            cache_position: 缓存位置，可选
+            second_per_grid_ts: 每网格时间步的秒数，可选
+            dataset_names: 数据集名称，可选
+            dof_mask: 自由度掩码，可选
+            agent_pos_mask: 代理位置掩码，可选
+            unnorm: 是否反归一化，默认为True
+            **kwargs: 其他参数
+
+        返回:
+            包含预测动作、真实动作（如果提供）和计时结果的字典
+        """
+
+        # 初始化计时
         total_start_time = time.time()
         timing_results = {}
 
+        # 确定批量大小
         batch_size = (
             input_ids.shape[0] if input_ids is not None else inputs_embeds.shape[0]
         )
+        # 配置输出参数， 是否输出注意力权重、隐藏状态和字典
         output_attentions = (
             output_attentions
             if output_attentions is not None
@@ -2036,12 +2084,18 @@ class Qwen2_5_VLMoEForAction(
             return_dict if return_dict is not None else self.config.use_return_dict
         )
 
+        # ==================== 输入嵌入处理阶段 ====================
         embed_start_time = time.time()
         if inputs_embeds is None:
+            # 文本嵌入处理
             inputs_embeds = self.model.embed_tokens(input_ids)
+            
+            # 图像嵌入处理
             if pixel_values is not None:
                 pixel_values = pixel_values.type(self.visual.dtype)
+                # 生成图像特征
                 image_embeds = self.visual(pixel_values, grid_thw=image_grid_thw)
+                # 验证图像特征与图像token数量匹配
                 n_image_tokens = (input_ids == self.config.image_token_id).sum().item()
                 n_image_features = image_embeds.shape[0]
                 if n_image_tokens != n_image_features:
@@ -2049,6 +2103,7 @@ class Qwen2_5_VLMoEForAction(
                         f"Image features and image tokens do not match: tokens: {n_image_tokens}, features {n_image_features}"
                     )
 
+                # 创建图像token掩码并替换嵌入
                 mask = input_ids == self.config.image_token_id
                 mask_unsqueezed = mask.unsqueeze(-1)
                 mask_expanded = mask_unsqueezed.expand_as(inputs_embeds)
@@ -2059,9 +2114,12 @@ class Qwen2_5_VLMoEForAction(
                 )
                 inputs_embeds = inputs_embeds.masked_scatter(image_mask, image_embeds)
 
+            # 视频嵌入处理
             if pixel_values_videos is not None:
                 pixel_values_videos = pixel_values_videos.type(self.visual.dtype)
+                # 生成视频特征
                 video_embeds = self.visual(pixel_values_videos, grid_thw=video_grid_thw)
+                # 验证视频特征与视频token数量匹配
                 n_video_tokens = (input_ids == self.config.video_token_id).sum().item()
                 n_video_features = video_embeds.shape[0]
                 if n_video_tokens != n_video_features:
@@ -2069,6 +2127,7 @@ class Qwen2_5_VLMoEForAction(
                         f"Video features and video tokens do not match: tokens: {n_video_tokens}, features {n_video_features}"
                     )
 
+                # 创建视频token掩码并替换嵌入
                 mask = input_ids == self.config.video_token_id
                 mask_unsqueezed = mask.unsqueeze(-1)
                 mask_expanded = mask_unsqueezed.expand_as(inputs_embeds)
@@ -2079,18 +2138,21 @@ class Qwen2_5_VLMoEForAction(
                 )
                 inputs_embeds = inputs_embeds.masked_scatter(video_mask, video_embeds)
 
+            # 本体感觉信息处理
             if (
                 proprioception is not None
                 and not self.config.use_state_string_representation
             ):
                 proprioception = proprioception.to(inputs_embeds.device)
                 agent_pos_mask = agent_pos_mask.to(inputs_embeds.device)
+                # 生成本体感觉嵌入
                 proprio_embed = self.action_preprocessor.proprioception_proj(
                     proprioception,
                     dataset_names,
                     agent_pos_mask,
-                    use_history=proprioception.shape[1] > 1,
+                    use_history=proprioception.shape[1] > 1,  # 如果有历史信息则使用
                 )
+                # 替换本体感觉token的嵌入
                 proprioception_mask = (
                     input_ids == self.action_token_id_set["propri_token_id"]
                 )
@@ -2098,11 +2160,13 @@ class Qwen2_5_VLMoEForAction(
                     -1, inputs_embeds.shape[-1]
                 ).to(inputs_embeds.dtype)
 
+            # 注意力掩码处理
             if attention_mask is not None:
                 attention_mask = attention_mask.to(inputs_embeds.device)
 
         timing_results["embed_processing"] = time.time() - embed_start_time
 
+        # ==================== 位置编码处理阶段 ====================
         position_start_time = time.time()
         # if we get 4D attention mask we cannot calculate rope deltas anymore. TODO @raushan fixme
         if position_ids is None and (
@@ -2151,6 +2215,7 @@ class Qwen2_5_VLMoEForAction(
 
         timing_results["position_encoding"] = time.time() - position_start_time
 
+        # ==================== 动作初始化阶段 ====================
         action_init_start_time = time.time()
         if action_chunk is not None:
             action_chunk = action_chunk.to(inputs_embeds.device).to(torch.float32)
@@ -2166,6 +2231,7 @@ class Qwen2_5_VLMoEForAction(
         noisy_action = noise.clone()
         dof_mask = dof_mask.to(inputs_embeds.device).to(torch.float32)
 
+        # 生成时间步长序列
         if num_inference_timesteps not in self.times_cache:
             self.times_cache[num_inference_timesteps] = torch.linspace(
                 0.0,
@@ -2175,21 +2241,26 @@ class Qwen2_5_VLMoEForAction(
                 dtype=torch.float32,
             )
         times = self.times_cache[num_inference_timesteps]
-        dt = times[1] - times[0]
+        dt = times[1] - times[0]  # 时间步长间隔
         time_0 = times[0].unsqueeze(0).repeat(noisy_action.shape[0])
+        
+        # 动作预处理，生成动作嵌入和条件信息
         action_embed, adarms_cond = self.action_preprocessor.step(
             timestep=time_0, noisy_action=noisy_action, dof_mask=dof_mask
         )
         action_embed = action_embed.reshape(-1, inputs_embeds.shape[-1]).to(
             inputs_embeds.dtype
         )
+        
+        # 替换动作token的嵌入
         flow_action_mask = input_ids == self.action_token_id_set["action_token_id"]
-
         inputs_embeds[flow_action_mask] = action_embed
 
         timing_results["action_initialization"] = time.time() - action_init_start_time
 
+        # ==================== 预取前向传播阶段 ====================
         prefetch_start_time = time.time()
+        # 模型前向传播，获取隐藏状态和KV缓存
         prefetch_output = self.model(
             input_ids=None,
             attention_mask=attention_mask,
@@ -2200,44 +2271,51 @@ class Qwen2_5_VLMoEForAction(
             start_indices=start_indices,
             end_indices=end_indices,
             positional_masks=positional_masks,
-            use_cache=True,
+            use_cache=True,  # 使用缓存
             output_attentions=False,
             output_hidden_states=False,
             return_dict=True,
-            adarms_conds=[None, adarms_cond],
+            adarms_conds=[None, adarms_cond],  # 传递条件信息
         )
         hidden_states = prefetch_output.last_hidden_state
         prefix_kv_cache = prefetch_output.past_key_values
 
+        # 提取动作隐藏状态并预测动作
         action_hidden_states = hidden_states[flow_action_mask].to(torch.float32)
         action_pred = self.action_preprocessor.action_proj_back(
             action_hidden_states[:, : self.action_preprocessor.action_hidden_size]
         )
+        
+        # 计算初始速度v_0
         if getattr(self.config, "use_x_pred", False):
             v_0 = action_pred - noise.reshape(-1, noise.shape[-1])
         else:
             v_0 = action_pred
 
+        # 处理填充动作
         if (not dof_mask.all()) and (padding_action is not None):
             print("use padding action", flush=True)
             v_padding = padding_action - noisy_action
             v_0 = (v_padding) * (1 - dof_mask) + v_0 * dof_mask
 
+        # 更新噪声动作
         noisy_action = noisy_action + dt * v_0.reshape(
             batch_size, action_horizon, action_dim
         )
 
         timing_results["prefetch_forward"] = time.time() - prefetch_start_time
 
+        # ==================== 缓存预处理阶段 ====================
         cache_prep_start_time = time.time()
 
+        # 确定前缀长度
         if prefix_length is None:
             has_true = flow_action_mask.any(dim=1)
             prefix_length = torch.argmax(flow_action_mask.float(), dim=1, keepdim=True)
             prefix_length[~has_true] = flow_action_mask.shape[1]
             prefix_length = prefix_length[0]
 
-        # support different transformers version
+        # 处理KV缓存（支持不同版本的transformers）
         if hasattr(prefix_kv_cache, "key_cache"):
             for layer_i in range(len(prefix_kv_cache.key_cache)):
                 prefix_kv_cache.key_cache[layer_i] = prefix_kv_cache.key_cache[layer_i][
@@ -2255,27 +2333,29 @@ class Qwen2_5_VLMoEForAction(
                     layer_i
                 ].values[:, :, :prefix_length, :]
 
+        # 分割后缀部分
         postfix_position_ids = position_ids[:, :, prefix_length:]
         postfix_inputs_embeds = inputs_embeds[:, prefix_length:, :]
         postfix_attention_mask = attention_mask[:, prefix_length:]
         postfix_moe_token_types = moe_token_types[:, prefix_length:]
         postfix_input_ids = input_ids[:, prefix_length:]
 
+        # 重新计算专家分组索引
         group_size = torch.zeros(
             self.config.num_experts, dtype=torch.long, device="cpu"
         )
         for i in range(self.config.num_experts):
             group_size[i] = (postfix_moe_token_types == i).sum()
 
-        # Calculate start and end indices for each expert group
+        # 计算每个专家组的起始和结束索引
         postfix_start_indices = torch.cumsum(group_size, dim=0) - group_size
         postfix_end_indices = torch.cumsum(group_size, dim=0)
 
+        # 处理填充掩码
         pad_token_id = self.processor.tokenizer.pad_token_id
         padding_mask = input_ids == pad_token_id
 
-        # prefix_length, postfix_length = prefix_indices.shape[0], postfix_indices.shape[0]
-
+        # 计算后缀长度并创建注意力掩码
         postfix_length = input_ids.shape[-1] - prefix_length
         _postfix_attention_mask = torch.ones(
             (batch_size, postfix_length, prefix_length + postfix_length),
@@ -2283,14 +2363,13 @@ class Qwen2_5_VLMoEForAction(
             device=postfix_attention_mask.device,
         )
 
-        # Use a padding mask to set the corresponding rows and columns to false.
-        # Get the padding mask for the postfix portion.
+        # 获取后缀部分的填充掩码
         postfix_padding_mask = padding_mask[
             :, prefix_length:
         ]  # [batch_size, postfix_length]
         full_padding_mask = padding_mask  # [batch_size, prefix_length + postfix_length]
 
-        # causal mask for postfix attention
+        # 应用因果掩码
         if self.config.causal_action_attention_mask:
             _postfix_attention_mask[:, :, prefix_length:] = torch.tril(
                 torch.ones(
@@ -2300,36 +2379,46 @@ class Qwen2_5_VLMoEForAction(
                 )
             )
 
+        # 处理填充位置的注意力掩码
         for batch_idx in range(padding_mask.shape[0]):
-            # Set the rows corresponding to the padding positions to False (where the query position is padding).
+            # 设置查询位置为填充的行为False
             _postfix_attention_mask[batch_idx, postfix_padding_mask[batch_idx], :] = (
                 False
             )
-            # Set the columns corresponding to the padding positions to False (the key position is the padding).
+            # 设置键位置为填充的列为False
             _postfix_attention_mask[batch_idx, :, full_padding_mask[batch_idx]] = False
 
         timing_results["cache_preprocessing"] = time.time() - cache_prep_start_time
 
+        # ==================== ODE积分阶段 ====================
         ode_start_time = time.time()
 
+        # 定义ODE步进函数
         def step_with_kvcache(timestep, noisy_action):
+            # 找到动作token
             action_mask = (
                 postfix_input_ids == self.action_token_id_set["action_token_id"]
             )
             assert action_mask.any(), "No action token found in input_ids"
+            
+            # 处理时间步
             timestep = timestep.unsqueeze(0).repeat(noisy_action.shape[0])
+            # 动作预处理
             action_embed, adarms_cond = self.action_preprocessor.step(
                 timestep=timestep, noisy_action=noisy_action, dof_mask=dof_mask
             )
             action_embed = action_embed.reshape(-1, postfix_inputs_embeds.shape[-1])
 
+            # 替换动作嵌入
             temp_inputs_embeds = postfix_inputs_embeds.clone()
             temp_inputs_embeds[action_mask] = action_embed.to(temp_inputs_embeds.dtype)
+            
+            # 模型前向传播
             transformer_outputs = self.model(
                 input_ids=None,
                 attention_mask=_postfix_attention_mask,
                 position_ids=postfix_position_ids,
-                past_key_values=prefix_kv_cache,
+                past_key_values=prefix_kv_cache,  # 使用前缀KV缓存
                 inputs_embeds=temp_inputs_embeds,
                 moe_token_types=postfix_moe_token_types,
                 start_indices=postfix_start_indices,
@@ -2341,6 +2430,7 @@ class Qwen2_5_VLMoEForAction(
                 adarms_conds=[None, adarms_cond],
             )
 
+            # 提取动作隐藏状态并预测动作速度
             hidden_states = transformer_outputs.last_hidden_state
             action_hidden_states = hidden_states[action_mask].to(torch.float32)
             action_pred = self.action_preprocessor.action_proj_back(
@@ -2352,12 +2442,14 @@ class Qwen2_5_VLMoEForAction(
                 v_t = action_pred
             return v_t.reshape(batch_size, action_horizon, action_dim)
 
+        # 执行ODE积分，生成动作轨迹
         action_trajectory = odeint(
             step_with_kvcache, noisy_action, times[1:], method="euler"
         )
 
         timing_results["ode_integration"] = time.time() - ode_start_time
 
+        # ==================== 后处理阶段 ====================
         postprocess_start_time = time.time()
         predict_action = action_trajectory[-1]
         if unnorm:
