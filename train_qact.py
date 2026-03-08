@@ -92,13 +92,19 @@ def setup_logging(config, accelerator):
     print(json.dumps(config, indent=2, ensure_ascii=False))
     print("=" * 50)
 
-    # Initialize wandb logger
+    # Initialize wandb logger with config dictionary
     logger = wandb.init(
         project=config["log_project"],
         name=config["log_name"],
         save_code=False,
         force=False,
+        config=config  # Pass the config dictionary here
     )
+
+    # Upload the YAML configuration file to wandb
+    if args.config:
+        logger.save(args.config)
+        print(f"Uploaded configuration file: {args.config}")
 
     return logger
 
