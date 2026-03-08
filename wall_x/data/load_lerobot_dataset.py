@@ -124,22 +124,50 @@ class PreprocessedDataset(Dataset[T_co]):
         return processed_frames, orig_height, orig_width, resized_height, resized_width
 
     def __getitem__(self, index):
+        # 获取指定索引的数据样本
         data = self._dataset[index]
+        
+        # 对图像进行预处理，返回处理后的图像列表和尺寸信息
+        # 例如：image_inputs 可能是 [PIL.Image, PIL.Image, ...]，表示多个摄像头视角的图像
+        # h=720, w=1280 表示原始图像的高和宽
+        # resize_h=224, resize_w=224 表示经过智能缩放后的统一尺寸
         image_inputs, h, w, resize_h, resize_w = self._vision_preprocess(data)
+        
+        # 获取机器人当前状态（如关节角度、末端位姿等）
+        # 举例：agent_pos 可能是 tensor([0.1, -0.2, 0.3, ...])，长度取决于机器人自由度
         agent_pos = data[self._state_key_mapping["state"]]
+        
+        # 获取动作序列（未来若干步的动作）
+        # 举例：action 可能是 tensor([[0.01, -0.01, 0.02], ...])，形状为 [action_horizon, action_dim]
         action = data[self._action_key_mapping["action"]]
+        
+        # 当前帧在整条轨迹中的索引
+        # 举例：frame_index=15 表示这是第15帧
         frame_index = data["frame_index"]
+        
+        # 构造指令信息字典，包含任务描述
+        # 举例：instruction_info = {"instruction": "把红色方块放到蓝色盘子里"}
         instruction_info = {"instruction": data["task"]}
+        
+        # 子任务生成比例，控制是否随机生成子任务提示
+        # 举例：generate_subtask_ratio=0.3 表示30%概率生成子任务
         generate_subtask_ratio = self.data_config.generate_subtask_ratio
 
+        # 根据指令、动作步长、帧索引等信息生成完整文本提示
+        # 返回的 complete_text 可能是：
+        # "任务：把红色方块放到蓝色盘子里\n当前帧：15\n<|propri|>...\n<|action|>..."
         complete_text, generate_subtask = get_wallx_normal_text(
             instruction_info,
-            self.dataload_config.get("action_horizon", 33) - 1,
+            self.dataload_config.get("action_horizon", 33) - 1,  # 动作步长-1，举例：32
             frame_index,
-            self.data_config.priority_order,
-            self._cam_key_mapping,
+            self.data_config.priority_order,  # 相机优先级列表，举例：["top_camera", "wrist_camera"]
+            self._cam_key_mapping,  # 相机键映射，举例：{"top_camera": "observation.images.top"}
             generate_subtask_ratio=generate_subtask_ratio,
         )
+        
+        # 在文本中处理视觉 grounding 点（如物体坐标）
+        # 将像素坐标从原始尺寸(h,w)映射到缩放后尺寸(resize_h, resize_w)
+        # 举例：文本中的 "<point>360,180</point>" 会被转换为 "<point>112,56</point>"
         text = process_grounding_points(
             complete_text, h, w, resize_h, resize_w, self.data_config.model_type
         )

@@ -307,6 +307,13 @@ def process_grounding_points(
     Adjusts coordinate values in <point> tags to match resized image dimensions
     for different model types (qwen2, qwen2_5).
 
+    Example workflow:
+    1. Input text: "Find the object at <point>[100, 200]</point>."
+    2. Original image: 640×480, resized to 320×240
+    3. For qwen2_5: scale factor = 0.5 → new coords = [50, 100]
+       For qwen2: normalize to 1000 → new coords = [156.25, 416.67]
+    4. Output text: "Find the object at <point>[50, 100]</point>."
+
     Args:
         text: Input text containing <point> tags with coordinates
         orig_height: Original image height
@@ -556,6 +563,9 @@ def get_wallx_normal_text(
         user_message = f"{user_request} {instruction}{text_prompt}{role_end_symbol}\n"
         assistant_output = f"{role_start_symbol}assistant\n{action_fast_symbol}{role_end_symbol}\n{action_symbol * action_chunk_size}"
 
+    # prologue: '<|im_start|>system\nYou are a helpful assistant.\n'
+    # user_message: '<|im_start|>user\nObservation: front view: <|vision_start|><|image_pad|><|vision_end|> right wrist view: <|vision_start|><|image_pad|><|vision_end|>\nInstruction: pick up the chocolate pudding and place it in the basket\nPredict the next action in robot action.\nProprioception: <|propri|>\n\n'
+    # assistant_output: '<|im_start|>assistant\n<|action_fast|>\n<|action|><|action|><|action|><|action|><|action|><|action|><|action|><|action|><|action|><|action|>' 这里有action_horizon个action_token
     complete_text = prologue + user_message + assistant_output
     return complete_text, generate_subtask
 
