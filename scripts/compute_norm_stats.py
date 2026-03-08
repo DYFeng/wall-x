@@ -183,7 +183,7 @@ def main() -> None:
     data_root_path = "/root/gpufree-data/datasets/x-square-robot/libero_all/"
     output_stats_dir = "/root/gpufree-data/output/train/libero_all/action_stats"
     trajectory_keys = {                             # your dataset keys
-        "action":{
+        "propri":{
             "follow_right_ee_cartesian_pos": [0,3],
             "follow_right_ee_rotation": [3,6],
             "follow_right_gripper": [6,7]
