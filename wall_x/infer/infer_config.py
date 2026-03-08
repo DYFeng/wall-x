@@ -421,7 +421,7 @@ class InferConfig:
             )
 
         self.model_path = checkpoint_path
-        self.action_tokenizer_path = "/x2robot_v2/Models/fast/"
+        self.action_tokenizer_path = "/root/gpufree-data/models/physical-intelligence/fast"
 
         # Other configuration attributes
         self.robot_host = robot_host

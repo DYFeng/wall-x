@@ -27,14 +27,16 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     origin_action_dim = args.origin_action_dim
-    pred_horizon = args.pred_horizon
 
     # get train config
-    model_path = "/path/to/your/checkpoint"
-    action_tokenizer_path = "/path/to/Models/fast"
-    save_dir = "/path/to/save/dir"
+    model_path = "/root/gpufree-data/output/train/libero_all/ckpt/0"
+    action_tokenizer_path = "/root/gpufree-data/models/physical-intelligence/fast"
+    save_dir = "/root/gpufree-data/output/train/libero_all/open_loop"
     path = f"{model_path}/config.yml"
     config = load_config(path)
+    
+    # 使用配置文件中的 action_horizon 或命令行参数
+    pred_horizon = args.pred_horizon or config["data"].get("action_horizon", 10)
 
     normalizer_action, normalizer_propri = register_normalizers(config, model_path)
 
@@ -62,7 +64,8 @@ if __name__ == "__main__":
     total_frames = len(dataloader)
 
     predict_mode = "fast" if config.get("use_fast_tokenizer", False) else "diffusion"
-    action_dim = 14 if predict_mode == "diffusion" else origin_action_dim
+    # 使用模型实际的 action_dim
+    action_dim = model.action_preprocessor.action_dim
     gt_traj = torch.zeros((total_frames, origin_action_dim))
     pred_traj = torch.zeros((total_frames, origin_action_dim))
 

@@ -448,7 +448,7 @@ class LiberoRobotEnv(BaseEnv):
                 model_input = self.get_observation(current_obs)
                 instruction = self.get_instruction(task_desc)
                 model_input["prompt"] = instruction
-                model_input["dataset_names"] = "libero_all"
+                model_input["dataset_names"] = "x-square-robot/libero_all"
 
                 state = np.concatenate(
                     [
