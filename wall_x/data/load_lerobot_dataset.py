@@ -720,7 +720,7 @@ def load_test_dataset(
 
     dataset = LeRobotDataset(
         repo_id,
-        episodes=[episode],
+        episodes=[episode], # 实际上episode只能为0，因为episodes需要是一个从0开始的序列（delta_timestamps被设置了）
         delta_timestamps=delta_timestamps,
         video_backend="pyav",
         root=root,

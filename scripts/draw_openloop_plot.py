@@ -22,8 +22,8 @@ def load_config(config_path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--pred_horizon", type=int, default=32)
-    parser.add_argument("--origin_action_dim", type=int, default=14)
+    parser.add_argument("--pred_horizon", type=int, default=10)
+    parser.add_argument("--origin_action_dim", type=int, default=7)
     args = parser.parse_args()
 
     origin_action_dim = args.origin_action_dim
@@ -73,6 +73,8 @@ if __name__ == "__main__":
     action_dim = model.action_preprocessor.action_dim
     gt_traj = torch.zeros((total_frames, origin_action_dim))
     pred_traj = torch.zeros((total_frames, origin_action_dim))
+    # 存储损失值
+    loss_values = []
 
     # use tqdm to show the progress
     for idx, batch in tqdm(
@@ -88,8 +90,9 @@ if __name__ == "__main__":
                     mode="predict",
                     predict_mode=predict_mode,
                 )
+                pred_action = outputs["predict_action"][:, :, :origin_action_dim]
                 pred_traj[idx : idx + pred_horizon] = (
-                    outputs["predict_action"][:, :, :origin_action_dim]
+                    pred_action
                     .detach()
                     .cpu()
                     .squeeze(0)
@@ -106,6 +109,15 @@ if __name__ == "__main__":
                 ).squeeze(0)
             )
             gt_traj[idx : idx + pred_horizon] = denormalized_gt.detach().cpu()
+            
+            # 计算损失 (MSE)
+            if pred_action is not None:
+                mse_loss = torch.nn.functional.mse_loss(
+                    pred_action.squeeze(0), 
+                    denormalized_gt.unsqueeze(0).to(pred_action.device)
+                )
+                loss_values.append(mse_loss.item())
+                print(f"Frame {idx}: MSE Loss = {mse_loss.item():.6f}")
 
     gt_traj_np = gt_traj.numpy()
     pred_traj_np = pred_traj.numpy()
@@ -130,4 +142,18 @@ if __name__ == "__main__":
     save_path = os.path.join(save_dir, "lerobot_comparison.png")
     plt.savefig(save_path)
     print(f"Saved plot to {save_path}")
+    # 计算平均损失
+    if loss_values:
+        avg_loss = sum(loss_values) / len(loss_values)
+        print(f"\nAverage MSE Loss: {avg_loss:.6f}")
+        
+        # 保存损失值到文件
+        loss_file = os.path.join(save_dir, "loss_values.txt")
+        with open(loss_file, "w") as f:
+            f.write(f"Average MSE Loss: {avg_loss:.6f}\n")
+            f.write("\nFrame-wise Loss:\n")
+            for i, loss in enumerate(loss_values):
+                f.write(f"Frame {i * pred_horizon}: {loss:.6f}\n")
+        print(f"Loss values saved to {loss_file}")
+    
     plt.close()
