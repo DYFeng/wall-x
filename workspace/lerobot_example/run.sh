@@ -6,7 +6,8 @@ NUM_GPUS=$(echo $CUDA_VISIBLE_DEVICES | tr ',' '\n' | wc -l)
 echo "[current time: $(date +'%Y-%m-%d %H:%M:%S')]"
 
 code_dir="/root/gpufree-data/wall-x"
-config_path="${code_dir}/workspace/lerobot_example"
+# config_path="${code_dir}/workspace/lerobot_example/config_qact_libero.yml"
+config_path="${code_dir}/workspace/lerobot_example/config_qact_cleanup.yml"
 
 # Use a fixed port instead of a random one
 export PORT=$((21000 + $RANDOM % 30000))
@@ -16,7 +17,7 @@ MASTER_PORT=10239 # use 5 digits ports
 export LAUNCHER="accelerate launch --num_processes=$NUM_GPUS --main_process_port=$PORT"
 
 export SCRIPT="${code_dir}/train_qact.py"
-export SCRIPT_ARGS="--config ${config_path}/config_qact_libero.yml --seed $MASTER_PORT"
+export SCRIPT_ARGS="--config ${config_path} --seed $MASTER_PORT"
 
 echo "Running command: $LAUNCHER $SCRIPT $SCRIPT_ARGS"
 

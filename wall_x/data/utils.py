@@ -68,6 +68,14 @@ KEY_MAPPINGS = {
         "state": "observation.state",
         "action": "action",
     },
+    "EverNorif/so101-table-cleanup": {
+        "camera": {
+            "observation.images.front": "face_view",
+            "observation.images.wrist": "right_wrist_view",
+        },
+        "state": "observation.state",
+        "action": "action",
+    },
 }
 
 CAMERA_NAME_MAPPING = {

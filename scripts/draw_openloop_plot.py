@@ -29,7 +29,11 @@ if __name__ == "__main__":
     origin_action_dim = args.origin_action_dim
 
     # get train config
-    model_path = "/root/gpufree-data/output/train/libero_all/ckpt/0"
+    # model_path = "/root/gpufree-data/output/train/libero_all/ckpt/0"
+    # save_dir = "/root/gpufree-data/output/train/libero_all/open_loop"
+    model_path = "/root/gpufree-data/output/train/so101-table-cleanup/ckpt/0"
+    save_dir = "/root/gpufree-data/output/train/so101-table-cleanup/open_loop"
+
     action_tokenizer_path = "/root/gpufree-data/models/physical-intelligence/fast"
     save_dir = "/root/gpufree-data/output/train/libero_all/open_loop"
     path = f"{model_path}/config.yml"
