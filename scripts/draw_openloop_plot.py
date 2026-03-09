@@ -35,26 +35,15 @@ if __name__ == "__main__":
     save_dir = "/root/gpufree-data/output/train/so101-table-cleanup/open_loop"
 
     action_tokenizer_path = "/root/gpufree-data/models/physical-intelligence/fast"
-    save_dir = "/root/gpufree-data/output/train/libero_all/open_loop"
+    
     path = f"{model_path}/config.yml"
     config = load_config(path)
+    
     
     # 使用配置文件中的 action_horizon 或命令行参数
     pred_horizon = args.pred_horizon or config["data"].get("action_horizon", 10)
 
     normalizer_action, normalizer_propri = register_normalizers(config, model_path)
-
-    # load model with customized robot config
-    model = Qwen2_5_VLMoEForAction.from_pretrained(
-        model_path, train_config=config, action_tokenizer_path=action_tokenizer_path
-    )
-
-    model.set_normalizer(
-        copy.deepcopy(normalizer_action), copy.deepcopy(normalizer_propri)
-    )
-    model.eval()
-    model = model.to("cuda")
-    model.to_bfloat16_for_selected_params()
 
     # get test dataloader
     dataload_config = get_data_configs(config["data"])
@@ -67,6 +56,26 @@ if __name__ == "__main__":
     # dataloader = dataset.get_train_dataloader()
 
     total_frames = len(dataloader)
+
+    
+    # for idx, batch in tqdm(
+    #     enumerate(dataloader), total=total_frames, desc="predicting"
+    # ):
+    #     pass
+    # import sys
+    # sys.exit(0)
+
+    # load model with customized robot config
+    model = Qwen2_5_VLMoEForAction.from_pretrained(
+        model_path, train_config=config, action_tokenizer_path=action_tokenizer_path
+    )
+
+    model.set_normalizer(
+        copy.deepcopy(normalizer_action), copy.deepcopy(normalizer_propri)
+    )
+    model.eval()
+    model = model.to("cuda")
+    model.to_bfloat16_for_selected_params()
 
     predict_mode = "fast" if config.get("use_fast_tokenizer", False) else "diffusion"
     # 使用模型实际的 action_dim
