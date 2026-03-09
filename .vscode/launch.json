@@ -22,13 +22,13 @@
             "console": "integratedTerminal",
             "args": ["--config", "${workspaceFolder}/workspace/lerobot_example/config_qact_libero.yml"]
         },
-         {
-            "name": "debug draw_openloop_plot.py",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/scripts/draw_openloop_plot.py",
-            "console": "integratedTerminal",
-            "args": ["--origin_action_dim", "7", "--pred_horizon", "10"]
+        {
+        "name": "debug draw_openloop_plot.py",
+        "type": "debugpy",
+        "request": "launch",
+        "program": "${workspaceFolder}/scripts/draw_openloop_plot.py",
+        "console": "integratedTerminal",
+        "args": ["--origin_action_dim", "7", "--pred_horizon", "10"]
         }
     ]
 }
